@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVX Web Services</title>
+
+<meta name="description" content="AVX provides affordable website development for beginners and small businesses.">
+<meta name="author" content="Vanshit Sharma">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:#0b0b0b;color:#fff;line-height:1.6;}
+
+.container{max-width:1200px;margin:auto;padding:0 20px;}
+a{text-decoration:none;color:inherit;}
+button{border:none;cursor:pointer;font-weight:600}
+
+/* BUTTON */
+.neon-btn{
+  padding:12px 26px;
+  border-radius:30px;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:#000;
+  font-weight:700;
+  box-shadow:0 0 20px rgba(0,255,240,0.6);
+}
+.neon-btn:hover{transform:scale(1.05);}
+
+/* HEADER */
+header{position:sticky;top:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);}
+.header-inner{display:flex;justify-content:space-between;align-items:center;padding:15px 0;}
+nav{display:flex;gap:20px;}
+nav a:hover{color:#00fff0;}
+
+/* HERO */
+.hero{display:flex;align-items:center;justify-content:space-between;padding:80px 0;}
+.hero h1{
+  font-size:3rem;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+.hero p{margin-top:15px;color:#aaa;max-width:500px;}
+
+/* SECTION */
+section{padding:70px 0;}
+.section-title{
+  text-align:center;
+  font-size:2.2rem;
+  margin-bottom:40px;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+/* CARDS */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:25px;}
+.card{
+  background:rgba(255,255,255,0.05);
+  padding:25px;
+  border-radius:20px;
+  text-align:center;
+  border:1px solid rgba(255,255,255,0.1);
+}
+.card h3{color:#00fff0;margin-bottom:10px;}
+.card p{color:#ccc;}
+
+/* PRICING */
+.price-card{
+  background:rgba(255,255,255,0.07);
+  padding:30px;
+  border-radius:20px;
+  text-align:center;
+  border:1px solid rgba(255,255,255,0.15);
+}
+.price{font-size:2rem;color:#00fff0;margin:15px 0;}
+
+/* CONTACT FORM */
+form{
+  max-width:600px;
+  margin:auto;
+  display:grid;
+  gap:15px;
+}
+
+input, textarea{
+  padding:14px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.05);
+  color:#fff;
+  font-family:'Poppins',sans-serif;
+}
+
+/* TOAST POPUP */
+.toast{
+  position:fixed;
+  bottom:30px;
+  right:30px;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:#000;
+  padding:16px 22px;
+  border-radius:12px;
+  font-weight:600;
+  box-shadow:0 0 25px rgba(0,255,240,0.7);
+  opacity:0;
+  transform:translateY(20px);
+  transition:0.4s ease;
+  z-index:9999;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* FOOTER */
+footer{
+  border-top:1px solid rgba(255,255,255,0.1);
+  padding:25px 0;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+
+@media(max-width:768px){
+  .hero{flex-direction:column;text-align:center;}
+}
+
+.neon-btn{
+  position: relative;
+  padding:12px 28px;
+  border-radius:40px;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:#000;
+  font-weight:700;
+  border:none;
+  cursor:pointer;
+  overflow:hidden;
+  transition:all 0.35s ease;
+  box-shadow:0 0 15px rgba(0,255,240,0.4);
+}
+
+/* HOVER */
+.neon-btn:hover{
+  transform:translateY(-3px) scale(1.05);
+  box-shadow:0 0 30px rgba(0,255,240,0.9);
+}
+
+/* CLICK */
+.neon-btn:active{
+  transform:scale(0.95);
+  box-shadow:0 0 10px rgba(0,255,240,0.6);
+}
+
+/* GLOW ANIMATION */
+.neon-btn::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-100%;
+  width:100%;
+  height:100%;
+  background:linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.6),
+    transparent
+  );
+  transition:0.6s;
+}
+
+/* SHINE EFFECT ON HOVER */
+.neon-btn:hover::before{
+  left:100%;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="container header-inner">
+    <div style="font-size:1.5rem;font-weight:700;color:#00fff0;">AVX</div>
+    <nav>
+      <a href="#services">Services</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <button class="neon-btn"
+      onclick="window.open('https://wa.me/917668569913','_blank')">
+      WhatsApp
+    </button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="container hero">
+  <div>
+    <h1>Affordable Websites<br><span style="color:#fff;">For Everyone</span></h1>
+    <p>
+      I build clean, fast & mobile-friendly websites for students, shops and small businesses.
+    </p>
+    <div style="margin-top:20px;">
+      <button class="neon-btn">Start Website</button>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="container" id="services">
+  <h2 class="section-title">My Services</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Website Development</h3>
+      <p>1–5 page responsive website using HTML & CSS.</p>
+    </div>
+    <div class="card">
+      <h3>Basic SEO</h3>
+      <p>Google-friendly structure and fast loading.</p>
+    </div>
+    <div class="card">
+      <h3>Maintenance</h3>
+      <p>Monthly updates, small changes & support.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="container" id="pricing">
+  <h2 class="section-title">Pricing Plans</h2>
+
+  <div class="grid">
+
+    <!-- WEBSITE BASIC -->
+    <div class="price-card">
+      <h3>Website Starter</h3>
+      <div class="price">₹1500</div>
+      <p>One-time payment</p>
+      <p>✔ 1–5 Pages Website</p>
+      <p>✔ Mobile Responsive</p>
+      <p>✔ Contact Form</p>
+      <button class="neon-btn" onclick="selectPlan('Website Starter','1500')">
+        Choose
+      </button>
+    </div>
+
+    
+
+    <!-- MAINTENANCE -->
+    <div class="price-card">
+      <h3>Maintenance Plan</h3>
+      <div class="price">₹500</div>
+      <p>Per Month</p>
+      <p>✔ Content Updates</p>
+      <p>✔ Bug Fixes</p>
+      <p>✔ WhatsApp Support</p>
+      <button class="neon-btn"
+        onclick="window.location.href='plan-maintenance.html'">
+        Choose
+      </button>
+    </div>
+
+    <!-- SEO PLAN -->
+    <div class="price-card">
+      <h3>Advanced SEO & Marketing</h3>
+      <div class="price">₹2500</div>
+      <p>One-time setup</p>
+      <p>✔ On-page SEO</p>
+      <p>✔ Google Analytics</p>
+      <p>✔ Growth Strategy</p>
+      <button class="neon-btn" onclick="window.location.href='plan-seo.html'">Choose</button>
+    </div>
+
+    <!-- ECOMMERCE -->
+    <div class="price-card">
+      <h3>E-Commerce Starter</h3>
+      <div class="price">₹3500</div>
+      <p>One-time payment</p>
+      <p>✔ Product Listing</p>
+      <p>✔ Cart & Checkout</p>
+      <p>✔ Online Payments</p>
+      <button class="neon-btn" onclick="window.location.href='plan-ecommerce.html'">Choose</button>
+    </div>
+
+  </div>
+</section>
+
+<!--Team-->
+
+<section class="container" id="team">
+  <h2 class="section-title">Meet Our Team</h2>
+
+  <div class="grid">
+
+    <div class="card">
+      <h3>Vanshit Sharma</h3>
+      <p><b>Founder & Full-Stack Developer</b></p>
+      <p>
+        Backend, payment systems, admin panels aur
+        secure web solutions specialist.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Aman Sharma</h3>
+      <p><b>Co-Founder & Frontend Developer</b></p>
+      <p>
+        UI/UX design, animations aur
+        modern responsive websites expert.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<section class="container" id="demo">
+  <h2 class="section-title">Website Demos</h2>
+
+  <div class="grid">
+
+    <!-- DEMO 1 -->
+    <div class="card">
+      <h3>Business Website Demo</h3>
+      <p>
+        Clean & professional business website layout.
+      </p>
+      <button class="neon-btn"
+  onclick="window.open('https://your-demo-link.com','_blank')">
+  View Demo
+</button>
+
+    </div>
+
+    <!-- DEMO 2 -->
+    <div class="card">
+      <h3>Portfolio Website Demo</h3>
+      <p>
+        Personal / freelancer portfolio design.
+      </p>
+      <button class="neon-btn"
+  onclick="window.open('https://your-demo-link.com','_blank')">
+  View Demo
+</button>
+
+    </div>
+
+    <!-- DEMO 3 -->
+    <div class="card">
+      <h3>E-Commerce Demo</h3>
+      <p>
+        Online store with cart & payment flow.
+      </p>
+      <button class="neon-btn"
+  onclick="window.open('https://your-demo-link.com','_blank')">
+  View Demo
+</button>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="container" id="contact">
+  <h2 class="section-title">Contact Me</h2>
+
+  <form id="contactForm">
+    <input type="text" id="clientName" placeholder="Your Name" required>
+    <input type="email" id="clientEmail" placeholder="Email" required>
+    <textarea id="clientMessage" placeholder="Your Requirement" rows="4"></textarea>
+    <button type="submit" class="neon-btn">Send Message</button>
+  </form>
+</section>
+
+<!-- SUCCESS TOAST -->
+<div class="toast" id="toast">✅ Message sent successfully</div>
+
+<!-- SCRIPT -->
+<script>
+const form = document.getElementById("contactForm");
+const toast = document.getElementById("toast");
+
+form.addEventListener("submit", function(e){
+  e.preventDefault();
+
+  const name = document.getElementById("clientName").value;
+  const email = document.getElementById("clientEmail").value;
+  const message = document.getElementById("clientMessage").value;
+
+  fetch("/contact", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, message })
+  })
+  .then(res => res.json())
+  .then(() => {
+    form.reset();
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+  })
+  .catch(() => {
+    alert("Server error");
+  });
+});
+</script>
+
+<!-- FOOTER -->
+<footer class="container">
+  <div>© 2025 AVX | Beginner Web Developer</div>
+  <div>Instagram | WhatsApp</div>
+</footer>
+
+<script>
+function selectPlan(plan, price){
+  localStorage.setItem("plan", plan);
+  localStorage.setItem("price", price);
+  window.location.href = "plan.html";
+}
+</script>
+
+<!-- WHATSAPP CHAT BUBBLE -->
+<div class="whatsapp-float" onclick="openWhatsApp()">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
+  <span class="whatsapp-text">Chat with us</span>
+</div>
+
+<style>
+.whatsapp-float{
+  position:fixed;
+  bottom:25px;
+  right:25px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#25D366;
+  color:#fff;
+  padding:12px 18px;
+  border-radius:50px;
+  cursor:pointer;
+  box-shadow:0 0 20px rgba(37,211,102,0.6);
+  z-index:9999;
+  animation:pulse 2s infinite;
+  transition:0.3s ease;
+}
+
+.whatsapp-float:hover{
+  transform:scale(1.05);
+}
+
+.whatsapp-float img{
+  width:28px;
+  height:28px;
+}
+
+.whatsapp-text{
+  font-weight:600;
+  font-size:14px;
+}
+
+/* PULSE ANIMATION */
+@keyframes pulse{
+  0%{ box-shadow:0 0 0 0 rgba(37,211,102,0.7); }
+  70%{ box-shadow:0 0 0 15px rgba(37,211,102,0); }
+  100%{ box-shadow:0 0 0 0 rgba(37,211,102,0); }
+}
+
+/* MOBILE VIEW */
+@media(max-width:600px){
+  .whatsapp-text{ display:none; }
+  .whatsapp-float{
+    padding:14px;
+    border-radius:50%;
+  }
+}
+
+/* AI Floating Button */
+.ai-chat-btn{
+  position:fixed;
+  bottom:25px;
+  left:25px;
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:28px;
+  cursor:pointer;
+  box-shadow:0 0 25px rgba(0,255,240,0.8);
+  transition:0.3s;
+  z-index:9999;
+}
+
+.ai-chat-btn:hover{
+  transform:scale(1.1);
+}
+
+/* Chat Box */
+.ai-chat-box{
+  position:fixed;
+  bottom:100px;
+  left:25px;
+  width:320px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(15px);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:18px;
+  overflow:hidden;
+  display:none;
+  flex-direction:column;
+  z-index:9999;
+}
+
+/* Header */
+.ai-header{
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  padding:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:#000;
+  font-weight:700;
+}
+
+.ai-header button{
+  background:none;
+  border:none;
+  font-size:18px;
+  cursor:pointer;
+}
+
+/* Messages */
+.ai-messages{
+  padding:15px;
+  height:220px;
+  overflow-y:auto;
+  color:#fff;
+  font-size:14px;
+}
+
+.ai-messages p{
+  margin-bottom:10px;
+}
+
+/* Input Area */
+.ai-input{
+  display:flex;
+  border-top:1px solid rgba(255,255,255,0.2);
+}
+
+.ai-input input{
+  flex:1;
+  padding:12px;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:#fff;
+}
+
+.ai-input button{
+  padding:12px 16px;
+  border:none;
+  cursor:pointer;
+  background:#00fff0;
+  font-weight:700;
+}
+
+.ai-chat-btn{
+  position:fixed;
+  bottom:25px;
+  left:25px;
+
+  width:62px;
+  height:62px;
+
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(16px);
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  border:1px solid rgba(0,255,240,0.25);
+
+  box-shadow:0 0 18px rgba(0,255,240,0.6);
+  cursor:pointer;
+  z-index:9999;
+
+  transition:0.35s ease;
+}
+
+.ai-chat-btn:hover{
+  transform:scale(1.1);
+  box-shadow:0 0 35px rgba(0,255,240,1);
+}
+
+.ai-chat-btn img{
+  width:36px;
+  height:36px;
+  filter:drop-shadow(0 0 8px rgba(0,255,240,0.9));
+}
+
+.ai-box{
+  position:fixed;
+  bottom:100px;
+  left:25px;
+
+  width:320px;
+  height:380px;
+
+  background:rgba(0,0,0,0.85);
+  border:1px solid rgba(0,255,240,0.25);
+  border-radius:18px;
+
+  box-shadow:0 0 25px rgba(0,255,240,0.5);
+  display:none;
+  flex-direction:column;
+
+  overflow:hidden;
+  z-index:9999;
+}
+
+.ai-header{
+  padding:14px;
+  font-weight:700;
+  color:#00fff0;
+  background:rgba(255,255,255,0.05);
+  display:flex;
+  justify-content:space-between;
+}
+
+.ai-messages{
+  flex:1;
+  padding:12px;
+  font-size:14px;
+  color:white;
+  overflow-y:auto;
+}
+
+.ai-input{
+  display:flex;
+  padding:10px;
+  gap:8px;
+}
+
+.ai-input input{
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+}
+
+.ai-input button{
+  padding:10px 15px;
+  border-radius:10px;
+  background:#00fff0;
+  font-weight:700;
+  cursor:pointer;
+}
+
+
+/* Hover Glow */
+.ai-chat-btn:hover{
+  transform:scale(1.12);
+  box-shadow:0 0 45px rgba(0,255,240,1);
+}
+
+/* SVG Icon Inside Circle */
+.ai-chat-btn img{
+  width:42px;
+  height:42px;
+
+  filter:drop-shadow(0 0 10px rgba(0,255,240,0.9));
+}
+
+
+/* Hover Animation */
+.ai-chat-btn:hover{
+  transform:scale(1.1);
+  box-shadow:0 0 40px rgba(0,255,240,1);
+}
+
+/* SVG Icon inside */
+.ai-chat-btn img{
+  width:34px;
+  height:34px;
+
+  border-radius:50%;
+
+  filter:drop-shadow(0 0 8px rgba(0,255,240,0.9));
+}
+
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(0,255,240,0.6);}
+  70%{box-shadow:0 0 0 18px rgba(0,255,240,0);}
+  100%{box-shadow:0 0 0 0 rgba(0,255,240,0);}
+}
+
+.ai-chat-btn{
+  animation:pulse 2s infinite;
+}
+
+.ai-chat-btn{
+  box-shadow:0 0 25px rgba(0,255,240,0.8);
+}
+
+.ai-chat-btn img{
+  filter:drop-shadow(0 0 8px rgba(0,255,240,0.9));
+}
+
+
+
+</style>
+
+<script>
+function openWhatsApp(){
+  const phone = "917668569913"; // 👉 apna WhatsApp number
+  const message = "Hello AVX Team, I am interested in your website services.";
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank");
+}
+</script>
+
+<!-- AI CHAT BUTTON -->
+<div class="ai-chat-btn" onclick="toggleChat()">
+  <img src="avx-ai.svg" alt="AI Logo">
+</div>
+
+
+
+<!-- AI CHAT POPUP -->
+<div class="ai-chat-box" id="aiChatBox">
+  <div class="ai-header">
+    <span>AVX AI Assistant</span>
+    <button onclick="toggleChat()">✖</button>
+  </div>
+
+  <div class="ai-messages" id="aiMessages">
+    <p><b>AI:</b> Hi 👋 Tell me what type of website you need?</p>
+  </div>
+
+  <div class="ai-input">
+    <input type="text" id="userMsg" placeholder="Type your message...">
+    <button onclick="sendMsg()">Send</button>
+  </div>
+</div>
+
+<script>
+let step = 0;
+let clientData = {
+  type: "",
+  pages: "",
+  budget: ""
+};
+
+function toggleChat(){
+  const box = document.getElementById("aiChatBox");
+  box.style.display = box.style.display === "flex" ? "none" : "flex";
+}
+
+function sendMsg(){
+  const input = document.getElementById("userMsg");
+  const msg = input.value.trim();
+  if(msg==="") return;
+
+  const chat = document.getElementById("aiMessages");
+
+  // Show User Message
+  chat.innerHTML += `<p><b>You:</b> ${msg}</p>`;
+  input.value="";
+
+  let reply = "";
+
+  if(step === 0){
+    reply = "Great 😊 What type of website do you need? (Business / Portfolio / Shop)";
+    step++;
+  }
+
+  else if(step === 1){
+    clientData.type = msg;
+    reply = "Nice! How many pages do you want? (Example: 1-5 or 8-10)";
+    step++;
+  }
+
+  else if(step === 2){
+    clientData.pages = msg;
+    reply = "Awesome 👍 What is your budget? (₹1500 / ₹2500 / ₹3500)";
+    step++;
+  }
+
+  else if(step === 3){
+    clientData.budget = msg;
+
+    reply =
+      `Perfect ✅\n\nSummary:\n`+
+      `Website Type: ${clientData.type}\n`+
+      `Pages: ${clientData.pages}\n`+
+      `Budget: ${clientData.budget}\n\n`+
+      `Click WhatsApp button below to confirm your order 📲`;
+
+    setTimeout(()=>{
+      chat.innerHTML += `
+      <p>
+        <a href="https://wa.me/917668569913?text=Hello%20AVX!%20I%20need%20a%20${clientData.type}%20website%20with%20${clientData.pages}%20pages%20budget%20${clientData.budget}"
+        target="_blank"
+        style="display:inline-block;
+        padding:10px 18px;
+        background:#00ff88;
+        color:#000;
+        border-radius:12px;
+        font-weight:700;
+        text-decoration:none;">
+        ✅ Confirm on WhatsApp
+        </a>
+      </p>`;
+      chat.scrollTop = chat.scrollHeight;
+    },700);
+
+    step++;
+  }
+
+  else{
+    reply = "Thank you 😊 Our team will contact you soon on WhatsApp.";
+  }
+
+  setTimeout(()=>{
+    chat.innerHTML += `<p><b>AI:</b> ${reply}</p>`;
+    chat.scrollTop = chat.scrollHeight;
+  },600);
+}
+</script>
+
+
+</body>
+</html>

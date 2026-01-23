@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advance Payment | AVX</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<!-- ICONS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{
+  background:#0b0b0b;
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.card{
+  width:420px;
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(16px);
+  padding:35px;
+  border-radius:24px;
+  box-shadow:0 0 40px rgba(0,255,240,.5);
+}
+
+h2{
+  text-align:center;
+  color:#00fff0;
+  margin-bottom:10px;
+}
+
+.plan{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:15px 0;
+  color:#ccc;
+}
+
+.plan i{
+  color:#00ff88;
+  font-size:18px;
+}
+
+.amount{
+  text-align:center;
+  font-size:2.2rem;
+  margin:18px 0;
+  color:#00ff88;
+}
+
+input,textarea{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.05);
+  color:#fff;
+  margin-bottom:12px;
+}
+
+/* NEON BUTTON */
+.neon-btn{
+  width:100%;
+  padding:15px;
+  border-radius:40px;
+  border:none;
+  cursor:pointer;
+  font-weight:700;
+  color:#000;
+  background:linear-gradient(90deg,#00ff88,#00cc44);
+  box-shadow:0 0 30px rgba(0,255,136,.8);
+  transition:.35s;
+}
+.neon-btn:hover{
+  transform:translateY(-3px) scale(1.05);
+  box-shadow:0 0 45px rgba(0,255,136,1);
+}
+
+.note{
+  text-align:center;
+  font-size:13px;
+  color:#aaa;
+  margin-top:12px;
+}
+
+.secure{
+  text-align:center;
+  margin-top:10px;
+  color:#ccc;
+  font-size:14px;
+}
+.secure i{color:#00fff0;}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Advance Payment</h2>
+
+  <!-- PLAN INFO -->
+  <div class="plan"><i class="fa-solid fa-globe"></i> Website / SEO / E-Commerce</div>
+  <div class="plan"><i class="fa-solid fa-circle-check"></i> Project Confirmation</div>
+  <div class="plan"><i class="fa-solid fa-headset"></i> Priority Support</div>
+
+  <!-- AMOUNT -->
+  <div class="amount">₹<span id="amount">750</span></div>
+
+  <!-- CLIENT DETAILS -->
+  <input id="name" placeholder="Your Name" required>
+  <input id="email" type="email" placeholder="Email" required>
+  <textarea id="msg" rows="3" placeholder="Project / Website details"></textarea>
+
+  <!-- PAY -->
+  <button class="neon-btn" onclick="payAdvance()">
+    Pay Advance Now
+  </button>
+
+  <div class="secure">
+    <i class="fa-solid fa-lock"></i> 100% Secure Payment via Razorpay
+  </div>
+
+  <div class="note">
+    Remaining amount payable after work starts
+  </div>
+</div>
+
+<script>
+/*
+  Use URL like:
+  advance-payment.html?plan=Website&amount=750
+*/
+const params = new URLSearchParams(window.location.search);
+const amount = params.get("amount") || 750;
+const plan = params.get("plan") || "Website Plan";
+document.getElementById("amount").innerText = amount;
+
+async function payAdvance(){
+  if(!name.value || !email.value){
+    alert("Please fill Name & Email");
+    return;
+  }
+
+  const res = await fetch("/create-order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({amount})
+  });
+  const order = await res.json();
+
+  new Razorpay({
+    key:"RAZORPAY_KEY_ID",
+    amount:order.amount,
+    currency:"INR",
+    order_id:order.id,
+    name:"AVX Web Services",
+    description:plan + " Advance Payment",
+    handler:function(r){
+      fetch("/contact",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          plan,
+          amount,
+          name:name.value,
+          email:email.value,
+          message:msg.value,
+          orderId:r.razorpay_order_id
+        })
+      }).then(()=>{
+        window.location.href="success.html?orderId="+r.razorpay_order_id;
+      });
+    }
+  }).open();
+}
+</script>
+
+</body>
+</html>

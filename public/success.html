@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Successful - AVX</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{
+  background:#0b0b0b;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+
+.card{
+  max-width:600px;
+  width:100%;
+  background:rgba(255,255,255,0.06);
+  padding:40px;
+  border-radius:24px;
+  text-align:center;
+  box-shadow:0 0 40px rgba(0,255,240,0.25);
+}
+
+.success-icon{
+  font-size:60px;
+  color:#00ff99;
+  margin-bottom:20px;
+}
+
+h1{
+  color:#00fff0;
+  margin-bottom:10px;
+}
+
+p{
+  color:#ccc;
+  margin-bottom:15px;
+}
+
+.summary{
+  text-align:left;
+  margin:25px 0;
+  background:rgba(0,255,240,0.08);
+  padding:20px;
+  border-radius:14px;
+  border:1px solid rgba(0,255,240,0.3);
+}
+
+.summary p{
+  margin-bottom:8px;
+  color:#e6ffff;
+}
+
+.neon-btn{
+  display:inline-block;
+  padding:14px 30px;
+  border-radius:40px;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:#000;
+  font-weight:700;
+  text-decoration:none;
+  margin-top:15px;
+  transition:0.3s;
+}
+
+.neon-btn:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 30px rgba(0,255,240,0.8);
+}
+
+.whatsapp{
+  margin-top:15px;
+  background:#25D366;
+  color:#000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+  <div class="success-icon">✅</div>
+
+  <h1>Order Successful!</h1>
+  <p>Thank you for choosing <b>AVX Web Services</b></p>
+
+  <p>Your payment has been received successfully.</p>
+
+  <!-- ORDER SUMMARY -->
+  <div class="summary">
+    <p><b>Plan:</b> <span id="plan"></span></p>
+    <p><b>Website Type:</b> <span id="website"></span></p>
+    <p><b>Payment:</b> <span id="payment"></span></p>
+    <p><b>Order ID:</b> <span id="orderId"></span></p>
+  </div>
+
+  <P>📌 Please save your Order ID for future reference</P>
+  
+  <p>
+    📞 Our team will contact you within <b>24 hours</b><br>
+    📄 Invoice will be shared on email
+  </p>
+
+  <a href="index.html" class="neon-btn">Go to Home</a><br>
+
+  <a id="whatsappBtn" class="neon-btn whatsapp" target="_blank">
+    Chat on WhatsApp
+  </a>
+
+</div>
+
+
+<script>
+// Load details from localStorage
+document.getElementById("plan").innerText =
+  localStorage.getItem("plan") || "Website Package";
+
+document.getElementById("website").innerText =
+  localStorage.getItem("websiteType") || "Business Website";
+
+document.getElementById("payment").innerText =
+  localStorage.getItem("paymentType") || "Paid";
+
+  document.getElementById("orderId").innerText =
+  localStorage.getItem("orderId") || "AVX-" + Date.now();
+
+// WhatsApp button
+const msg =
+`Hello AVX 👋
+My order is confirmed.
+
+Plan: ${localStorage.getItem("plan")}
+Website: ${localStorage.getItem("websiteType")}
+Payment: ${localStorage.getItem("paymentType")}`;
+
+document.getElementById("whatsappBtn").href =
+  "https://wa.me/917668569913?text=" + encodeURIComponent(msg);
+
+// Optional: clear storage after load
+setTimeout(()=>localStorage.clear(), 5000);
+</script>
+
+</body>
+</html>

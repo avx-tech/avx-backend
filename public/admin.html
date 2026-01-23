@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard | AVX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Poppins, sans-serif;
+}
+
+body{
+  background:#0f172a;
+  color:#fff;
+  display:flex;
+  min-height:100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:240px;
+  background:#020617;
+  padding:25px;
+}
+
+.sidebar h2{
+  color:#00fff0;
+  text-align:center;
+  margin-bottom:40px;
+}
+
+.sidebar a{
+  display:block;
+  padding:12px 15px;
+  color:#cbd5e1;
+  text-decoration:none;
+  border-radius:8px;
+  margin-bottom:10px;
+  transition:.3s;
+}
+
+.sidebar a:hover{
+  background:#00fff0;
+  color:#000;
+}
+
+/* ===== MAIN ===== */
+.main{
+  flex:1;
+  padding:25px;
+}
+
+/* ===== TOP BAR ===== */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
+
+.topbar h1{
+  font-size:24px;
+}
+
+.logout{
+  background:#ff4d4d;
+  border:none;
+  padding:10px 20px;
+  border-radius:20px;
+  cursor:pointer;
+  font-weight:600;
+  color:#000;
+}
+
+/* ===== STATS ===== */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:20px;
+  margin-bottom:30px;
+}
+
+.card{
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(10px);
+  padding:20px;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+  transition:.3s;
+}
+
+.card:hover{
+  transform:translateY(-5px);
+}
+
+.card h3{
+  color:#94a3b8;
+  margin-bottom:10px;
+}
+
+.card h2{
+  color:#00fff0;
+}
+
+/* ===== TABLE ===== */
+.table-box{
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(10px);
+  padding:20px;
+  border-radius:16px;
+  overflow-x:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:12px;
+  text-align:left;
+  font-size:14px;
+}
+
+th{
+  color:#00fff0;
+  border-bottom:1px solid #334155;
+}
+
+td{
+  color:#e5e7eb;
+  border-bottom:1px solid #1e293b;
+}
+
+@media(max-width:768px){
+  .sidebar{ display:none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+  <h2>AVX Admin</h2>
+  <a href="#">Dashboard</a>
+  <a href="#">Orders</a>
+  <a href="#">Payments</a>
+  <a href="#">Settings</a>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <div class="topbar">
+    <h1>Orders Dashboard</h1>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- ===== STATS ===== -->
+  <div class="cards">
+    <div class="card">
+      <h3>Total Orders</h3>
+      <h2 id="totalOrders">0</h2>
+    </div>
+    <div class="card">
+      <h3>Customers</h3>
+      <h2 id="totalCustomers">0</h2>
+    </div>
+  </div>
+
+  <!-- ===== ORDERS TABLE ===== -->
+  <div class="table-box">
+    <h2 style="margin-bottom:15px;">Recent Orders</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Message</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+
+      <tbody id="ordersTable">
+        <!-- Orders from MongoDB -->
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+async function loadOrders() {
+  try {
+    const res = await fetch("/admin/orders");
+
+    if (!res.ok) {
+      alert("Session expired. Login again.");
+      window.location.href = "/admin-login.html";
+      return;
+    }
+
+    const orders = await res.json();
+    const table = document.getElementById("ordersTable");
+    table.innerHTML = "";
+
+    document.getElementById("totalOrders").innerText = orders.length;
+
+    const uniqueEmails = new Set(orders.map(o => o.email));
+    document.getElementById("totalCustomers").innerText = uniqueEmails.size;
+
+    orders.forEach(order => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${order.orderId || "-"}</td>
+        <td>${order.name}</td>
+        <td>${order.email}</td>
+        <td>${order.message || "-"}</td>
+        <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+      `;
+      table.appendChild(row);
+    });
+
+  } catch (err) {
+    alert("Server error");
+  }
+}
+
+function logout(){
+  fetch("/admin/logout").then(()=>{
+    window.location.href="/admin-login.html";
+  });
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>

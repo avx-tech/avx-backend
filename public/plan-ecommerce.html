@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Commerce Plan | AVX</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:#0b0b0b;color:#fff;}
+.container{max-width:900px;margin:auto;padding:40px;}
+.card{
+  background:rgba(255,255,255,0.06);
+  border-radius:22px;
+  padding:30px;
+  margin-bottom:30px;
+  border:1px solid rgba(255,255,255,0.15);
+}
+h2{color:#00fff0;margin-bottom:10px;}
+p{color:#ccc;margin:6px 0}
+
+input,textarea{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.05);
+  color:#fff;
+  margin-top:10px;
+}
+
+.neon-btn{
+  position:relative;
+  padding:14px 34px;
+  border-radius:40px;
+  font-weight:700;
+  border:none;
+  cursor:pointer;
+  color:#000;
+  backdrop-filter:blur(12px);
+  overflow:hidden;
+  transition:.4s;
+}
+.neon-btn::before{
+  content:"";
+  position:absolute;
+  top:0;left:-100%;
+  width:100%;height:100%;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.6),transparent);
+  transition:.6s;
+}
+.neon-btn:hover::before{left:100%;}
+.neon-btn:hover{transform:translateY(-3px) scale(1.05);}
+.neon-btn:active{transform:scale(.95);}
+
+.neon-green{
+  background:linear-gradient(90deg,#00ff88,#00cc44);
+  box-shadow:0 0 25px rgba(0,255,136,.8);
+}
+.neon-blue{
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  box-shadow:0 0 25px rgba(0,255,240,.8);
+}
+
+#paymentBox{display:none;}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div class="card">
+  <h2>E-Commerce Starter Plan</h2>
+  <p><b>Total Price:</b> ₹3500</p>
+  <p>✔ Product Listing</p>
+  <p>✔ Cart & Checkout</p>
+  <p>✔ Razorpay Payments</p>
+  <p>✔ Admin Order Panel</p>
+</div>
+
+<div class="card">
+  <h2>Store Details</h2>
+  <input id="name" placeholder="Your Name">
+  <input id="email" type="email" placeholder="Email">
+  <textarea id="msg" rows="4" placeholder="Store / Product info"></textarea>
+
+  <br><br>
+  <button class="neon-btn neon-blue" onclick="confirmDetails()">Submit & Confirm</button>
+
+  <p id="confirmText" style="margin-top:15px;color:#00ff88;display:none;">
+    ✔ Details confirmed. Please proceed to payment.
+  </p>
+</div>
+
+<div class="card" id="paymentBox">
+  <h2>Payment Options</h2>
+
+  <button class="neon-btn neon-green" onclick="payNow(1750)">
+    Pay Advance ₹1750
+  </button>
+  &nbsp;
+  <button class="neon-btn neon-blue" onclick="payNow(3500)">
+    Pay Full ₹3500
+  </button>
+</div>
+
+</div>
+
+<script>
+function confirmDetails(){
+  const nameInput = document.getElementById("name");
+  const emailInput = document.getElementById("email");
+
+  if(!nameInput.value.trim() || !emailInput.value.trim()){
+    alert("Please fill Name & Email");
+    return;
+  }
+
+  document.getElementById("paymentBox").style.display = "block";
+  document.getElementById("confirmText").style.display = "block";
+}
+
+
+function payNow(amount){
+  const nameInput = document.getElementById("name");
+  const emailInput = document.getElementById("email");
+  const msgInput = document.getElementById("msg");
+
+  fetch("/create-order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({amount})
+  })
+  .then(res=>res.json())
+  .then(order=>{
+    new Razorpay({
+      key:"rzp_live_S4F1oww60ZXW1O",
+      amount:order.amount,
+      currency:"INR",
+      order_id:order.id,
+      name:"AVX Web Services",
+      description:"Plan Payment",
+      handler:function(res){
+        fetch("/contact",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            plan:"Selected Plan",
+            amount:amount,
+            name:nameInput.value,
+            email:emailInput.value,
+            message:msgInput.value,
+            orderId:res.razorpay_order_id
+          })
+        }).then(()=>{
+          window.location.href =
+            "success.html?orderId=" + res.razorpay_order_id;
+        });
+      }
+    }).open();
+  });
+}
+
+</script>
+</body>
+</html>
