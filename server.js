@@ -1,3 +1,5 @@
+const cors = require("cors");
+app.use(cors());
 // ===============================
 // IMPORTS
 // ===============================
@@ -239,5 +241,6 @@ app.get("/admin/orders", isAdmin, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running → http://localhost:${PORT}`);
 });
+
 
 
