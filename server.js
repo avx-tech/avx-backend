@@ -2,7 +2,6 @@
 // IMPORTS
 // ===============================
 const express = require("express");
-const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
 const Razorpay = require("razorpay");
 const bcrypt = require("bcryptjs");
@@ -240,4 +239,5 @@ app.get("/admin/orders", isAdmin, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running → http://localhost:${PORT}`);
 });
+
 
