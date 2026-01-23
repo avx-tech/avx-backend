@@ -9,6 +9,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const mongoose = require("mongoose");
+require("dotenv").config();
 
 // ===============================
 // APP INIT
@@ -238,3 +240,4 @@ app.get("/admin/orders", isAdmin, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running → http://localhost:${PORT}`);
 });
+
