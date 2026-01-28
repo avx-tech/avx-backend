@@ -67,7 +67,6 @@ app.use(
 // MONGODB CONNECTION
 // ===============================
 mongoose
-  console.log("MONGO_URI =", process.env.MONGO_URI);
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ Mongo Error:", err.message));
@@ -377,6 +376,7 @@ app.get("/live-popup", async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 
 
