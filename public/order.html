@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Plan | AVX Web Services</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Poppins',sans-serif;
+}
+
+body{
+  background:#0b0b0b;
+  color:white;
+}
+
+.container{
+  max-width:850px;
+  margin:auto;
+  padding:40px 20px;
+}
+
+/* HEADER */
+.header{
+  text-align:center;
+  margin-bottom:30px;
+}
+
+.header h1{
+  font-size:2.5rem;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.header p{
+  color:#aaa;
+  margin-top:10px;
+}
+
+/* CARD */
+.card{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px;
+  padding:28px;
+  margin-bottom:25px;
+}
+
+/* PLAN BOX */
+.plan-title{
+  color:#00fff0;
+  font-size:1.4rem;
+  margin-bottom:8px;
+}
+
+.plan-price{
+  font-size:2rem;
+  color:#00fff0;
+  margin:10px 0;
+}
+
+.plan-extra{
+  color:#ccc;
+  font-size:14px;
+}
+
+/* INPUTS */
+input,textarea{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.05);
+  color:white;
+  outline:none;
+}
+
+textarea{
+  resize:none;
+}
+
+/* BUTTON */
+.neon-btn{
+  position:relative;
+  padding:13px 26px;
+  border-radius:40px;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:#000;
+  font-weight:700;
+  border:none;
+  cursor:pointer;
+  overflow:hidden;
+  transition:0.35s;
+  margin-top:18px;
+  width:100%;
+  box-shadow:0 0 18px rgba(0,255,240,0.5);
+}
+
+.neon-btn:hover{
+  transform:translateY(-3px) scale(1.03);
+  box-shadow:0 0 30px rgba(0,255,240,0.9);
+}
+
+.neon-btn::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-100%;
+  width:100%;
+  height:100%;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,0.6),transparent);
+  transition:0.6s;
+}
+
+.neon-btn:hover::before{
+  left:100%;
+}
+
+/* PAYMENT BOX */
+#paymentBox{
+  display:none;
+}
+
+.small{
+  font-size:14px;
+  color:#ccc;
+  margin-top:10px;
+  text-align:center;
+}
+
+/* BACK BUTTON */
+.back{
+  display:inline-block;
+  margin-bottom:20px;
+  color:#00fff0;
+  font-weight:600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <a href="index.html" class="back">⬅ Back to Home</a>
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Order Your Website</h1>
+    <p>Fill details & confirm your plan on WhatsApp or Pay Online</p>
+  </div>
+
+  <!-- PLAN DETAILS -->
+  <div class="card">
+    <div class="plan-title" id="planName">Selected Plan: ---</div>
+    <div class="plan-price">₹<span id="planPrice">---</span></div>
+    <p class="plan-extra">🎁 Free Demo Available • ⚡ Delivery in 5–7 Days</p>
+  </div>
+
+  <!-- CLIENT FORM -->
+  <div class="card">
+    <h2 style="color:#00fff0;">Client Details</h2>
+
+    <input id="name" placeholder="Full Name" required>
+    <input id="phone" placeholder="Phone Number" required>
+    <input id="email" type="email" placeholder="Email Address" required>
+
+    <textarea id="requirement" rows="4"
+      placeholder="Describe your website requirements..." required></textarea>
+
+    <!-- WhatsApp Order -->
+    <button class="neon-btn" onclick="sendWhatsAppOrder()">
+      📲 Confirm Order on WhatsApp
+    </button>
+
+    <!-- Unlock Payment -->
+    <button class="neon-btn" onclick="unlockPayment()">
+      💳 Pay Online (Optional)
+    </button>
+
+    <p id="unlockText" class="small" style="display:none;">
+      ✔ Payment option unlocked below
+    </p>
+  </div>
+
+  <!-- PAYMENT BOX -->
+  <div class="card" id="paymentBox">
+    <h2 style="color:#00fff0;">Secure Payment</h2>
+
+    <button class="neon-btn" onclick="payNow()">
+      Pay Full Amount ₹<span id="payAmount">---</span>
+    </button>
+
+    <p class="small">🔒 Powered by Razorpay Secure Checkout</p>
+  </div>
+
+</div>
+
+<script>
+/* GET PLAN + PRICE */
+const params = new URLSearchParams(window.location.search);
+const plan = params.get("plan");
+const price = params.get("price");
+
+document.getElementById("planName").innerText =
+  "Selected Plan: " + plan;
+
+document.getElementById("planPrice").innerText = price;
+document.getElementById("payAmount").innerText = price;
+
+
+/* WHATSAPP ORDER */
+function sendWhatsAppOrder(){
+
+  let name = document.getElementById("name").value;
+  let phone = document.getElementById("phone").value;
+  let email = document.getElementById("email").value;
+  let req = document.getElementById("requirement").value;
+
+  if(!name || !phone || !email || !req){
+    alert("Please fill all details!");
+    return;
+  }
+
+  let whatsappNumber = "917668569913"; // ✅ Your number
+
+  let message =
+`🔥 New Website Order Received
+
+📌 Plan: ${plan}
+💰 Price: ₹${price}
+
+👤 Name: ${name}
+📞 Phone: ${phone}
+📧 Email: ${email}
+
+📝 Requirement:
+${req}
+
+✅ Please share next steps.`;
+
+  let url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  window.open(url,"_blank");
+}
+
+
+/* UNLOCK PAYMENT */
+function unlockPayment(){
+  document.getElementById("paymentBox").style.display="block";
+  document.getElementById("unlockText").style.display="block";
+}
+
+
+/* RAZORPAY PAYMENT */
+function payNow(){
+
+  fetch("/create-order",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({amount:price})
+  })
+  .then(res=>res.json())
+  .then(order=>{
+
+    const options={
+      key:"rzp_live_S4F1oww60ZXW1O",
+      amount:order.amount,
+      currency:"INR",
+      name:"AVX Web Services",
+      description:plan,
+      order_id:order.id,
+
+      handler:function(res){
+        alert("Payment Successful!");
+
+        window.location.href =
+          "success.html?orderId=" + res.razorpay_order_id;
+      }
+    };
+
+    new Razorpay(options).open();
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AVX Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Poppins,sans-serif;
+}
+
+body{
+  background:#0b0b0b;
+  color:white;
+  display:flex;
+  min-height:100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:250px;
+  background:#050505;
+  border-right:1px solid rgba(0,255,240,0.2);
+  padding:25px;
+}
+
+.sidebar h2{
+  color:#00fff0;
+  text-align:center;
+  margin-bottom:40px;
+  font-size:22px;
+}
+
+.sidebar button{
+  width:100%;
+  padding:12px;
+  margin-bottom:12px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:700;
+  background:rgba(255,255,255,0.07);
+  color:white;
+  transition:.3s;
+}
+
+.sidebar button:hover,
+.sidebar button.active{
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:black;
+}
+
+/* ===== MAIN ===== */
+.main{
+  flex:1;
+  padding:25px;
+}
+
+/* TOPBAR */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:25px;
+}
+
+.topbar h1{
+  font-size:24px;
+  color:#00fff0;
+}
+
+.logout{
+  background:#ff4d4d;
+  border:none;
+  padding:10px 20px;
+  border-radius:20px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+/* STATS */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:18px;
+  margin-bottom:25px;
+}
+
+.card{
+  padding:20px;
+  border-radius:18px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(0,255,240,0.15);
+  box-shadow:0 0 25px rgba(0,255,240,0.08);
+}
+
+.card h3{
+  color:#aaa;
+  font-size:14px;
+}
+
+.card h2{
+  margin-top:8px;
+  color:#00fff0;
+  font-size:26px;
+}
+
+/* SEARCH */
+.search-box{
+  margin:15px 0;
+}
+
+.search-box input{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.05);
+  color:white;
+}
+
+/* TABLE */
+.table-box{
+  margin-top:20px;
+  background:rgba(255,255,255,0.06);
+  padding:18px;
+  border-radius:18px;
+  overflow-x:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:12px;
+  text-align:left;
+  font-size:14px;
+}
+
+th{
+  color:#00fff0;
+  border-bottom:1px solid rgba(0,255,240,0.3);
+}
+
+td{
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.badge{
+  padding:5px 10px;
+  border-radius:10px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.paid{ background:#00ff88; color:black; }
+.pending{ background:#ffcc00; color:black; }
+
+.action-btn{
+  padding:6px 12px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.delete-btn{ background:#ff4d4d; }
+.whatsapp-btn{ background:#25D366; color:black; }
+
+.export-btn{
+  margin-top:10px;
+  padding:10px 16px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:700;
+  background:linear-gradient(90deg,#00fff0,#0066ff);
+  color:black;
+}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+  <h2>AVX Admin</h2>
+
+  <button class="active" onclick="showTab('orders')">📦 Orders</button>
+  <button onclick="showTab('leads')">📩 Leads</button>
+  <button onclick="showTab('demo')">🎁 Demo Requests</button>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <div class="topbar">
+    <h1 id="tabTitle">Orders Dashboard</h1>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="cards">
+    <div class="card">
+      <h3>Total Records</h3>
+      <h2 id="totalCount">0</h2>
+    </div>
+
+    <div class="card">
+      <h3>Total Customers</h3>
+      <h2 id="totalCustomers">0</h2>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by Name / Email...">
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-box">
+    <h2 id="tableHeading">Recent Orders</h2>
+
+    <table>
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+
+</div>
+
+<script>
+let currentTab="orders";
+let allData=[];
+
+/* ===== TAB SWITCH ===== */
+function showTab(tab){
+  currentTab=tab;
+
+  document.getElementById("tabTitle").innerText =
+    tab==="orders" ? "Orders Dashboard" :
+    tab==="leads" ? "Contact Leads Dashboard" :
+    "Demo Requests Dashboard";
+
+  loadData();
+}
+
+/* ===== LOAD DATA ===== */
+async function loadData(){
+  let url =
+    currentTab==="orders" ? "/admin/orders" :
+    currentTab==="leads" ? "/admin/leads" :
+    "/admin/demo";
+
+  const res = await fetch(url);
+  if(!res.ok) return alert("Login Expired");
+
+  allData = await res.json();
+
+  document.getElementById("totalCount").innerText = allData.length;
+
+  const uniqueEmails=new Set(allData.map(x=>x.email));
+  document.getElementById("totalCustomers").innerText = uniqueEmails.size;
+
+  renderTable(allData);
+}
+
+/* ===== RENDER TABLE ===== */
+function renderTable(data){
+  const head=document.getElementById("tableHead");
+  const body=document.getElementById("tableBody");
+
+  body.innerHTML="";
+
+  if(currentTab==="orders"){
+    head.innerHTML=`
+      <tr>
+        <th>Order ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Plan</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>`;
+  }
+
+  if(currentTab==="leads"){
+    head.innerHTML=`
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Plan</th>
+        <th>Message</th>
+        <th>Action</th>
+      </tr>`;
+  }
+
+  if(currentTab==="demo"){
+    head.innerHTML=`
+      <tr>
+        <th>Name</th>
+        <th>Business</th>
+        <th>Phone</th>
+        <th>Requirement</th>
+      </tr>`;
+  }
+
+  data.forEach(item=>{
+    let row=document.createElement("tr");
+
+    if(currentTab==="orders"){
+      row.innerHTML=`
+        <td>${item.orderId}</td>
+        <td>${item.name}</td>
+        <td>${item.email}</td>
+        <td>${item.plan}</td>
+        <td>₹${item.amount}</td>
+        <td>
+          <span class="badge ${item.paymentStatus==="Paid"?"paid":"pending"}">
+            ${item.paymentStatus}
+          </span>
+        </td>
+        <td>
+          <button class="action-btn delete-btn"
+          onclick="deleteRecord('${item._id}')">Delete</button>
+        </td>`;
+    }
+
+    if(currentTab==="leads"){
+      row.innerHTML=`
+        <td>${item.name}</td>
+        <td>${item.email}</td>
+        <td>
+          <a class="action-btn whatsapp-btn"
+          href="https://wa.me/${item.phone}" target="_blank">
+          WhatsApp</a>
+        </td>
+        <td>${item.plan}</td>
+        <td>${item.message}</td>
+        <td>
+          <button class="action-btn delete-btn"
+          onclick="deleteRecord('${item._id}')">Delete</button>
+        </td>`;
+    }
+
+    if(currentTab==="demo"){
+      row.innerHTML=`
+        <td>${item.name}</td>
+        <td>${item.business}</td>
+        <td>${item.phone}</td>
+        <td>${item.requirement}</td>`;
+    }
+
+    body.appendChild(row);
+  });
+}
+
+/* ===== DELETE ===== */
+async function deleteRecord(id){
+  if(!confirm("Delete this record?")) return;
+
+  let url =
+    currentTab==="orders" ? `/admin/delete-order/${id}` :
+    currentTab==="leads" ? `/admin/delete-lead/${id}` :
+    "";
+
+  await fetch(url,{method:"DELETE"});
+  loadData();
+}
+
+/* ===== SEARCH ===== */
+document.getElementById("searchInput").addEventListener("input",()=>{
+  const val=document.getElementById("searchInput").value.toLowerCase();
+
+  const filtered=allData.filter(x=>
+    (x.name||"").toLowerCase().includes(val) ||
+    (x.email||"").toLowerCase().includes(val)
+  );
+
+  renderTable(filtered);
+});
+
+/* ===== EXPORT CSV ===== */
+function exportCSV(){
+  let csv="";
+
+  allData.forEach(obj=>{
+    csv += Object.values(obj).join(",") + "\n";
+  });
+
+  const blob=new Blob([csv],{type:"text/csv"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download=currentTab+".csv";
+  link.click();
+}
+
+/* ===== LOGOUT ===== */
+function logout(){
+  fetch("/admin/logout").then(()=>{
+    window.location.href="/admin-login.html";
+  });
+}
+
+loadData();
+</script>
+
+</body>
+</html>
