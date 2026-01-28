@@ -254,10 +254,18 @@ await Lead.create({
 // ===============================
 // RAZORPAY SETUP
 // ===============================
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY,
-  key_secret: process.env.RAZORPAY_SECRET
-});
+let razorpay;
+
+if (process.env.RAZORPAY_KEY && process.env.RAZORPAY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY,
+    key_secret: process.env.RAZORPAY_SECRET
+  });
+
+  console.log("✅ Razorpay Initialized");
+} else {
+  console.log("❌ Razorpay Keys Missing");
+}
 
 // Create Razorpay Order
 app.post("/create-order", async (req, res) => {
@@ -368,5 +376,6 @@ app.get("/live-popup", async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 
