@@ -226,6 +226,11 @@ app.get("/admin/demo", isAdmin, async (req, res) => {
 // ===============================
 app.post("/contact", async (req, res) => {
   try {
+    console.log("✅ CONTACT FORM HIT");
+    console.log("BODY:", req.body);
+
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("ADMIN_EMAIL:", process.env.ADMIN_EMAIL);
     const { name, email, phone, message, plan, amount } = req.body;
 
     const orderId = "AVX" + Date.now();
