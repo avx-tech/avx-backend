@@ -44,6 +44,13 @@ app.use(
 // ===============================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET","POST"],
+  credentials: true
+}));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // ===============================
@@ -74,6 +81,9 @@ app.use(
   })
 );
 
+app.use(cors({
+  origin: "*"
+}));
 // ===============================
 // MONGODB CONNECTION
 // ===============================
