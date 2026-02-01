@@ -123,12 +123,15 @@ const Admin = mongoose.model(
 // EMAIL SETUP
 // ===============================
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
   }
 });
+
 
 // ===============================
 // ADMIN AUTH MIDDLEWARE
@@ -357,3 +360,20 @@ app.get("/live-popup", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 AVX Backend Live → Port ${PORT}`);
 });
+
+app.get("/test-email", async (req, res) => {
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: process.env.ADMIN_EMAIL,
+      subject: "✅ AVX Test Email",
+      text: "Hello! Brevo SMTP working successfully 🚀"
+    });
+
+    res.send("✅ Email Sent Successfully!");
+  } catch (err) {
+    console.log("❌ Test Email Error:", err.message);
+    res.status(500).send("❌ Email Failed: " + err.message);
+  }
+});
+
