@@ -11,7 +11,7 @@ const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const crypto = require("crypto");
 const rateLimit = require("express-rate-limit");
-const cors = require("cors"); // ✅ NEW
+const cors = require("cors");
 require("dotenv").config();
 
 const Lead = require("./models/Lead");
@@ -30,11 +30,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===============================
-// ✅ CORS FIX FOR NETLIFY + RENDER
+// ✅ CORS FIX (Netlify → Render)
 // ===============================
 app.use(
   cors({
-    origin: "https://avxweb.netlify.app", // ✅ Netlify frontend
+    origin: "https://avxweb.netlify.app",
+    methods: ["GET", "POST"],
     credentials: true
   })
 );
@@ -44,17 +45,10 @@ app.use(
 // ===============================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use(cors({
-  origin: "*",
-  methods: ["GET","POST"],
-  credentials: true
-}));
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // ===============================
-// ✅ SESSION FIX FOR HTTPS (RENDER)
+// SESSION SETUP
 // ===============================
 app.use(
   session({
@@ -62,9 +56,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, // ✅ Render HTTPS requires true
+      secure: false, // ✅ Render free में false रखना best
       httpOnly: true,
-      sameSite: "none", // ✅ Important for Netlify
+      sameSite: "lax",
       maxAge: 1000 * 60 * 60
     }
   })
@@ -81,9 +75,6 @@ app.use(
   })
 );
 
-app.use(cors({
-  origin: "*"
-}));
 // ===============================
 // MONGODB CONNECTION
 // ===============================
@@ -120,20 +111,18 @@ const Admin = mongoose.model(
 );
 
 // ===============================
-// EMAIL SETUP
+// ✅ EMAIL SETUP (Brevo SMTP)
 // ===============================
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
+  host: process.env.SMTP_HOST, // smtp-relay.brevo.com
+  port: process.env.SMTP_PORT, // 587
   secure: false,
 
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
+    user: process.env.SMTP_USER, // Brevo email
+    pass: process.env.SMTP_PASS  // Brevo SMTP key
+  }
 });
-
-
 
 // ===============================
 // ADMIN AUTH MIDDLEWARE
@@ -177,67 +166,13 @@ app.post("/admin/login", async (req, res) => {
 });
 
 // ===============================
-// ADMIN LOGOUT
-// ===============================
-app.get("/admin/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.redirect("/admin-login.html");
-  });
-});
-
-// ===============================
-// ADMIN ORDERS FETCH
-// ===============================
-app.get("/admin/orders", isAdmin, async (req, res) => {
-  res.json(await Order.find().sort({ createdAt: -1 }));
-});
-
-// ===============================
-// ADMIN LEADS FETCH
-// ===============================
-app.get("/admin/leads", isAdmin, async (req, res) => {
-  res.json(await Lead.find().sort({ createdAt: -1 }));
-});
-
-// ===============================
-// DELETE LEAD
-// ===============================
-app.delete("/admin/delete-lead/:id", isAdmin, async (req, res) => {
-  await Lead.findByIdAndDelete(req.params.id);
-  res.json({ success: true });
-});
-
-// ===============================
-// DEMO REQUEST SAVE
-// ===============================
-app.post("/demo-request", async (req, res) => {
-  await DemoRequest.create(req.body);
-
-  res.json({
-    success: true,
-    message: "Demo Request Saved ✅"
-  });
-});
-
-// ===============================
-// ADMIN DEMO FETCH
-// ===============================
-app.get("/admin/demo", isAdmin, async (req, res) => {
-  res.json(await DemoRequest.find().sort({ createdAt: -1 }));
-});
-
-// ===============================
 // CONTACT FORM + EMAIL CONFIRM
 // ===============================
 app.post("/contact", async (req, res) => {
   try {
-    console.log("✅ CONTACT FORM HIT");
-    console.log("BODY:", req.body);
+    console.log("✅ CONTACT FORM HIT:", req.body);
 
-    console.log("EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("ADMIN_EMAIL:", process.env.ADMIN_EMAIL);
     const { name, email, phone, message, plan, amount } = req.body;
-
     const orderId = "AVX" + Date.now();
 
     // Save Order
@@ -260,17 +195,21 @@ app.post("/contact", async (req, res) => {
       message
     });
 
-    // Admin Mail
+    // ===============================
+    // ✅ ADMIN EMAIL
+    // ===============================
     await transporter.sendMail({
-      from: `"AVX Website" <${process.env.EMAIL_USER}>`,
+      from: `"AVX Website" <${process.env.SMTP_USER}>`,
       to: process.env.ADMIN_EMAIL,
       subject: `📩 New Order Received - ${orderId}`,
       html: adminOrderTemplate(name, email, phone, plan, amount, orderId)
     });
 
-    // Client Mail
+    // ===============================
+    // ✅ CLIENT EMAIL
+    // ===============================
     await transporter.sendMail({
-      from: `"AVX Web Services" <${process.env.EMAIL_USER}>`,
+      from: `"AVX Web Services" <${process.env.SMTP_USER}>`,
       to: email,
       subject: `✅ Order Confirmed - ${orderId}`,
       html: orderClientTemplate(name, plan, amount, orderId)
@@ -281,95 +220,27 @@ app.post("/contact", async (req, res) => {
       message: "Order Saved + Emails Sent Successfully ✅",
       orderId
     });
+
   } catch (err) {
     console.log("❌ Contact Error:", err.message);
-    res.status(500).json({ success: false });
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error ❌"
+    });
   }
 });
 
 // ===============================
-// RAZORPAY SETUP
+// TEST EMAIL ROUTE
 // ===============================
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY,
-  key_secret: process.env.RAZORPAY_SECRET
-});
-
-// Create Razorpay Order
-app.post("/create-order", async (req, res) => {
-  const { amount } = req.body;
-
-  const order = await razorpay.orders.create({
-    amount: amount * 100,
-    currency: "INR",
-    receipt: "avx_" + Date.now()
-  });
-
-  res.json(order);
-});
-
-// Verify Payment
-app.post("/verify-payment", async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-    req.body;
-
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_SECRET)
-    .update(body)
-    .digest("hex");
-
-  if (expectedSignature === razorpay_signature) {
-    await Order.updateOne(
-      { orderId: razorpay_order_id },
-      {
-        paymentStatus: "Paid",
-        razorpayPaymentId: razorpay_payment_id
-      }
-    );
-
-    return res.json({ success: true });
-  }
-
-  res.status(400).json({ success: false });
-});
-
-// ===============================
-// LIVE POPUP API
-// ===============================
-app.get("/live-popup", async (req, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 }).limit(3);
-    const leads = await Lead.find().sort({ createdAt: -1 }).limit(3);
-    const demos = await DemoRequest.find().sort({ createdAt: -1 }).limit(3);
-
-    let popupData = [];
-
-    orders.forEach(o => popupData.push(`✅ ${o.name} ordered ${o.plan}`));
-    leads.forEach(l => popupData.push(`📩 ${l.name} inquiry for ${l.plan}`));
-    demos.forEach(d => popupData.push(`🎁 ${d.name} requested Free Demo`));
-
-    res.json(popupData);
-  } catch {
-    res.json([]);
-  }
-});
-
-// ===============================
-// SERVER START
-// ===============================
-app.listen(PORT, () => {
-  console.log(`🚀 AVX Backend Live → Port ${PORT}`);
-});
-
 app.get("/test-email", async (req, res) => {
   try {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: process.env.ADMIN_EMAIL,
-      subject: "AVX Test Email",
-      text: "✅ Email working from Render + Brevo SMTP",
+      subject: "✅ AVX Test Email",
+      text: "Brevo SMTP working successfully 🚀"
     });
 
     res.send("✅ Email Sent Successfully!");
@@ -379,4 +250,9 @@ app.get("/test-email", async (req, res) => {
   }
 });
 
-
+// ===============================
+// SERVER START
+// ===============================
+app.listen(PORT, () => {
+  console.log(`🚀 AVX Backend Live → Port ${PORT}`);
+});
