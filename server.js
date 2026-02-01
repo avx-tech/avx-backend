@@ -368,14 +368,15 @@ app.get("/test-email", async (req, res) => {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: process.env.ADMIN_EMAIL,
-      subject: "✅ AVX Test Email",
-      text: "Hello! Brevo SMTP working successfully 🚀"
+      subject: "AVX Test Email",
+      text: "✅ Email working from Render + Brevo SMTP",
     });
 
     res.send("✅ Email Sent Successfully!");
   } catch (err) {
-    console.log("❌ Test Email Error:", err.message);
-    res.status(500).send("❌ Email Failed: " + err.message);
+    console.log("❌ Email Error:", err.message);
+    res.send("❌ Email Failed: " + err.message);
   }
 });
+
 
