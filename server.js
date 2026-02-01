@@ -1,5 +1,5 @@
 // ===============================
-// AVX FINAL SERVER.JS (CLEAN + WORKING)
+// AVX FINAL SERVER.JS (RENDER READY)
 // ===============================
 
 // ===== IMPORTS =====
@@ -11,16 +11,11 @@ const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const crypto = require("crypto");
 const rateLimit = require("express-rate-limit");
-const Lead = require("./models/Lead");
+const cors = require("cors"); // ✅ NEW
 require("dotenv").config();
 
+const Lead = require("./models/Lead");
 const DemoRequest = require("./models/DemoRequest");
-
-// ===============================
-// APP INIT
-// ===============================
-const app = express();
-const PORT = process.env.PORT || 3000;
 
 const {
   orderClientTemplate,
@@ -28,6 +23,21 @@ const {
   demoTemplate
 } = require("./utils/emailTemplates");
 
+// ===============================
+// APP INIT
+// ===============================
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ===============================
+// ✅ CORS FIX FOR NETLIFY + RENDER
+// ===============================
+app.use(
+  cors({
+    origin: "https://avxweb.netlify.app", // ✅ Netlify frontend
+    credentials: true
+  })
+);
 
 // ===============================
 // MIDDLEWARES
@@ -37,7 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // ===============================
-// SESSION SETUP
+// ✅ SESSION FIX FOR HTTPS (RENDER)
 // ===============================
 app.use(
   session({
@@ -45,8 +55,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: true, // ✅ Render HTTPS requires true
       httpOnly: true,
+      sameSite: "none", // ✅ Important for Netlify
       maxAge: 1000 * 60 * 60
     }
   })
@@ -135,17 +146,15 @@ app.get("/create-admin", async (req, res) => {
 });
 
 // ===============================
-// ADMIN LOGIN (DB CHECK)
+// ADMIN LOGIN
 // ===============================
 app.post("/admin/login", async (req, res) => {
   const { email, password } = req.body;
 
   const admin = await Admin.findOne({ email });
-
   if (!admin) return res.status(401).json({ success: false });
 
   const match = await bcrypt.compare(password, admin.password);
-
   if (!match) return res.status(401).json({ success: false });
 
   req.session.admin = true;
@@ -165,8 +174,22 @@ app.get("/admin/logout", (req, res) => {
 // ADMIN ORDERS FETCH
 // ===============================
 app.get("/admin/orders", isAdmin, async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json(orders);
+  res.json(await Order.find().sort({ createdAt: -1 }));
+});
+
+// ===============================
+// ADMIN LEADS FETCH
+// ===============================
+app.get("/admin/leads", isAdmin, async (req, res) => {
+  res.json(await Lead.find().sort({ createdAt: -1 }));
+});
+
+// ===============================
+// DELETE LEAD
+// ===============================
+app.delete("/admin/delete-lead/:id", isAdmin, async (req, res) => {
+  await Lead.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
 });
 
 // ===============================
@@ -174,7 +197,18 @@ app.get("/admin/orders", isAdmin, async (req, res) => {
 // ===============================
 app.post("/demo-request", async (req, res) => {
   await DemoRequest.create(req.body);
-  res.json({ success: true, message: "Demo Request Saved ✅" });
+
+  res.json({
+    success: true,
+    message: "Demo Request Saved ✅"
+  });
+});
+
+// ===============================
+// ADMIN DEMO FETCH
+// ===============================
+app.get("/admin/demo", isAdmin, async (req, res) => {
+  res.json(await DemoRequest.find().sort({ createdAt: -1 }));
 });
 
 // ===============================
@@ -184,10 +218,9 @@ app.post("/contact", async (req, res) => {
   try {
     const { name, email, phone, message, plan, amount } = req.body;
 
-    // ✅ Unique Order ID
     const orderId = "AVX" + Date.now();
 
-    // ✅ Save Order in MongoDB
+    // Save Order
     await Order.create({
       orderId,
       plan,
@@ -198,35 +231,24 @@ app.post("/contact", async (req, res) => {
       amount
     });
 
-    // ✅ Save Contact Lead also
-await Lead.create({
-  name,
-  email,
-  phone,
-  plan,
-  message
-});
+    // Save Lead
+    await Lead.create({
+      name,
+      email,
+      phone,
+      plan,
+      message
+    });
 
-    // ==========================
-    // ✅ 1. ADMIN EMAIL ALERT
-    // ==========================
+    // Admin Mail
     await transporter.sendMail({
       from: `"AVX Website" <${process.env.EMAIL_USER}>`,
       to: process.env.ADMIN_EMAIL,
       subject: `📩 New Order Received - ${orderId}`,
-      html: adminOrderTemplate(
-        name,
-        email,
-        phone,
-        plan,
-        amount,
-        orderId
-      )
+      html: adminOrderTemplate(name, email, phone, plan, amount, orderId)
     });
 
-    // ==========================
-    // ✅ 2. CLIENT CONFIRMATION EMAIL
-    // ==========================
+    // Client Mail
     await transporter.sendMail({
       from: `"AVX Web Services" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -234,38 +256,24 @@ await Lead.create({
       html: orderClientTemplate(name, plan, amount, orderId)
     });
 
-    // ✅ Final Response
     res.json({
       success: true,
       message: "Order Saved + Emails Sent Successfully ✅",
       orderId
     });
-
-  } catch (error) {
-    console.log("❌ Contact Error:", error.message);
-
-    res.status(500).json({
-      success: false,
-      message: "Server Error ❌"
-    });
+  } catch (err) {
+    console.log("❌ Contact Error:", err.message);
+    res.status(500).json({ success: false });
   }
 });
 
 // ===============================
 // RAZORPAY SETUP
 // ===============================
-let razorpay;
-
-if (process.env.RAZORPAY_KEY && process.env.RAZORPAY_SECRET) {
-  razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY,
-    key_secret: process.env.RAZORPAY_SECRET
-  });
-
-  console.log("✅ Razorpay Initialized");
-} else {
-  console.log("❌ Razorpay Keys Missing");
-}
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY,
+  key_secret: process.env.RAZORPAY_SECRET
+});
 
 // Create Razorpay Order
 app.post("/create-order", async (req, res) => {
@@ -308,76 +316,29 @@ app.post("/verify-payment", async (req, res) => {
 });
 
 // ===============================
-// SERVER START
-// ===============================
-app.listen(PORT, () => {
-  console.log(`🚀 AVX Server Running → http://localhost:${PORT}`);
-});
-
-app.get("/test-email", async (req, res) => {
-  try {
-    await transporter.sendMail({
-      from: `"AVX Web Services" <${process.env.EMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL,
-      subject: "✅ AVX Email System Working",
-      text: "Congratulations! आपका Gmail सिस्टम सही चल रहा है 🚀"
-    });
-
-    res.send("✅ Email Sent Successfully!");
-  } catch (err) {
-    console.log("Email Error:", err.message);
-    res.status(500).send("❌ Email Failed");
-  }
-});
-
-app.get("/admin/leads", isAdmin, async(req,res)=>{
-  res.json(await Lead.find().sort({createdAt:-1}));
-});
-
-app.delete("/admin/delete-lead/:id", isAdmin, async(req,res)=>{
-  await Lead.findByIdAndDelete(req.params.id);
-  res.json({success:true});
-});
-
-app.get("/admin/demo", isAdmin, async(req,res)=>{
-  res.json(await DemoRequest.find().sort({createdAt:-1}));
-});
-
-// ===============================
-// LIVE POPUP API (Real Data)
+// LIVE POPUP API
 // ===============================
 app.get("/live-popup", async (req, res) => {
   try {
-    // Latest 3 Records (Orders + Leads + Demo)
     const orders = await Order.find().sort({ createdAt: -1 }).limit(3);
     const leads = await Lead.find().sort({ createdAt: -1 }).limit(3);
     const demos = await DemoRequest.find().sort({ createdAt: -1 }).limit(3);
 
     let popupData = [];
 
-    // Orders Messages
-    orders.forEach(o => {
-      popupData.push(`✅ ${o.name} ordered ${o.plan}`);
-    });
-
-    // Leads Messages
-    leads.forEach(l => {
-      popupData.push(`📩 ${l.name} sent an inquiry for ${l.plan}`);
-    });
-
-    // Demo Messages
-    demos.forEach(d => {
-      popupData.push(`🎁 ${d.name} requested a Free Demo`);
-    });
+    orders.forEach(o => popupData.push(`✅ ${o.name} ordered ${o.plan}`));
+    leads.forEach(l => popupData.push(`📩 ${l.name} inquiry for ${l.plan}`));
+    demos.forEach(d => popupData.push(`🎁 ${d.name} requested Free Demo`));
 
     res.json(popupData);
-
-  } catch (err) {
-    res.status(500).json([]);
+  } catch {
+    res.json([]);
   }
 });
 
-
-
-
-
+// ===============================
+// SERVER START
+// ===============================
+app.listen(PORT, () => {
+  console.log(`🚀 AVX Backend Live → Port ${PORT}`);
+});
