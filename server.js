@@ -148,16 +148,17 @@ app.post("/admin/login", async (req, res) => {
 // ===============================
 // ADMIN ORDERS FETCH
 // ===============================
-app.get("/admin/orders", isAdmin, async (req, res) => {
+app.get("/admin/orders", async (req, res) => {
   res.json(await Order.find().sort({ createdAt: -1 }));
 });
 
 // ===============================
 // ADMIN LEADS FETCH
 // ===============================
-app.get("/admin/leads", isAdmin, async (req, res) => {
+app.get("/admin/leads", async (req, res) => {
   res.json(await Lead.find().sort({ createdAt: -1 }));
 });
+
 
 // ===============================
 // CONTACT FORM (ONLY SAVE TO DB)
