@@ -293,3 +293,12 @@ app.get("/test-email", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 AVX Backend Live → Port ${PORT}`);
 });
+
+app.get("/live-popup", async (req, res) => {
+  res.json([
+    "✅ Someone ordered SEO Plan",
+    "📩 New inquiry received",
+    "🎁 Free demo requested"
+  ]);
+});
+
