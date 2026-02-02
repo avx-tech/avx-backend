@@ -31,6 +31,14 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/* ✅ ADD THIS ROOT ROUTE HERE */
+app.get("/", (req, res) => {
+  res.send("✅ AVX Backend Running Successfully 🚀");
+});
+
+
+
+
 // ===============================
 // ✅ CORS FIX (Netlify → Render)
 // ===============================
