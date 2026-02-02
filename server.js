@@ -256,6 +256,11 @@ app.post("/contact", async (req, res) => {
   }
 });
 
+app.get("/", (req, res) => {
+  res.send("✅ AVX Backend Running Successfully 🚀");
+});
+
+
 // ===============================
 // TEST EMAIL ROUTE
 // ===============================
