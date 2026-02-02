@@ -123,14 +123,31 @@ const Admin = mongoose.model(
 // ✅ EMAIL SETUP (BREVO SMTP)
 // ===============================
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST, // smtp-relay.brevo.com
-  port: process.env.SMTP_PORT, // 587
+  host: "smtp-relay.brevo.com",
+  port: 587,
   secure: false,
   auth: {
-    user: process.env.SMTP_USER, // Brevo Email
-    pass: process.env.SMTP_PASS, // Brevo SMTP Key
-  },
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
 });
+
+const SibApiV3Sdk = require("@getbrevo/brevo");
+
+let apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
+
+async function sendEmail(to, subject, html) {
+  await apiInstance.sendTransacEmail({
+    sender: { email: process.env.ADMIN_EMAIL, name: "AVX" },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  });
+}
 
 // ===============================
 // ADMIN AUTH MIDDLEWARE
@@ -294,6 +311,15 @@ app.get("/live-popup", async (req, res) => {
     "🎁 Free demo requested"
   ]);
 });
+
+app.get("/contact", (req, res) => {
+  res.send("✅ Contact API working! Use POST method.");
+});
+
+app.get("/", (req, res) => {
+  res.send("🚀 AVX Backend Running Successfully!");
+});
+
 
 // ===============================
 // SERVER START (ONLY ONCE)
