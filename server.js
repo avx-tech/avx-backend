@@ -1,5 +1,5 @@
 // ===============================
-// AVX FINAL SERVER.JS (RENDER READY)
+// AVX FINAL SERVER.JS (RENDER READY + BREVO SMTP)
 // ===============================
 
 // ===== IMPORTS =====
@@ -14,13 +14,15 @@ const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 require("dotenv").config();
 
+// ===== MODELS =====
 const Lead = require("./models/Lead");
 const DemoRequest = require("./models/DemoRequest");
 
+// ===== EMAIL TEMPLATES =====
 const {
   orderClientTemplate,
   adminOrderTemplate,
-  demoTemplate
+  demoTemplate,
 } = require("./utils/emailTemplates");
 
 // ===============================
@@ -29,11 +31,6 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log("🚀 Server Running on Port:", PORT);
-});
-
-
 // ===============================
 // ✅ CORS FIX (Netlify → Render)
 // ===============================
@@ -41,7 +38,7 @@ app.use(
   cors({
     origin: "https://avxweb.netlify.app",
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: false,
   })
 );
 
@@ -61,11 +58,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // ✅ Render free में false रखना best
+      secure: false,
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60
-    }
+    },
   })
 );
 
@@ -76,7 +72,7 @@ app.use(
   rateLimit({
     windowMs: 1 * 60 * 1000,
     max: 20,
-    message: "Too many requests, try again later."
+    message: "Too many requests, try again later.",
   })
 );
 
@@ -103,7 +99,7 @@ const Order = mongoose.model(
     amount: Number,
     paymentStatus: { type: String, default: "Pending" },
     razorpayPaymentId: String,
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
   })
 );
 
@@ -111,22 +107,21 @@ const Admin = mongoose.model(
   "Admin",
   new mongoose.Schema({
     email: String,
-    password: String
+    password: String,
   })
 );
 
 // ===============================
-// ✅ EMAIL SETUP (Brevo SMTP)
+// ✅ EMAIL SETUP (BREVO SMTP)
 // ===============================
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST, // smtp-relay.brevo.com
   port: process.env.SMTP_PORT, // 587
   secure: false,
-
   auth: {
-    user: process.env.SMTP_USER, // Brevo email
-    pass: process.env.SMTP_PASS  // Brevo SMTP key
-  }
+    user: process.env.SMTP_USER, // Brevo Email
+    pass: process.env.SMTP_PASS, // Brevo SMTP Key
+  },
 });
 
 // ===============================
@@ -148,7 +143,7 @@ app.get("/create-admin", async (req, res) => {
 
   await Admin.create({
     email: process.env.ADMIN_EMAIL,
-    password: hash
+    password: hash,
   });
 
   res.send("✅ Admin Created Successfully");
@@ -171,6 +166,32 @@ app.post("/admin/login", async (req, res) => {
 });
 
 // ===============================
+// ADMIN ORDERS FETCH
+// ===============================
+app.get("/admin/orders", isAdmin, async (req, res) => {
+  res.json(await Order.find().sort({ createdAt: -1 }));
+});
+
+// ===============================
+// ADMIN LEADS FETCH
+// ===============================
+app.get("/admin/leads", isAdmin, async (req, res) => {
+  res.json(await Lead.find().sort({ createdAt: -1 }));
+});
+
+// ===============================
+// DEMO REQUEST SAVE
+// ===============================
+app.post("/demo-request", async (req, res) => {
+  await DemoRequest.create(req.body);
+
+  res.json({
+    success: true,
+    message: "Demo Request Saved ✅",
+  });
+});
+
+// ===============================
 // CONTACT FORM + EMAIL CONFIRM
 // ===============================
 app.post("/contact", async (req, res) => {
@@ -188,7 +209,7 @@ app.post("/contact", async (req, res) => {
       email,
       phone,
       message,
-      amount
+      amount,
     });
 
     // Save Lead
@@ -197,7 +218,7 @@ app.post("/contact", async (req, res) => {
       email,
       phone,
       plan,
-      message
+      message,
     });
 
     // ===============================
@@ -207,7 +228,7 @@ app.post("/contact", async (req, res) => {
       from: `"AVX Website" <${process.env.SMTP_USER}>`,
       to: process.env.ADMIN_EMAIL,
       subject: `📩 New Order Received - ${orderId}`,
-      html: adminOrderTemplate(name, email, phone, plan, amount, orderId)
+      html: adminOrderTemplate(name, email, phone, plan, amount, orderId),
     });
 
     // ===============================
@@ -217,21 +238,20 @@ app.post("/contact", async (req, res) => {
       from: `"AVX Web Services" <${process.env.SMTP_USER}>`,
       to: email,
       subject: `✅ Order Confirmed - ${orderId}`,
-      html: orderClientTemplate(name, plan, amount, orderId)
+      html: orderClientTemplate(name, plan, amount, orderId),
     });
 
     res.json({
       success: true,
       message: "Order Saved + Emails Sent Successfully ✅",
-      orderId
+      orderId,
     });
-
   } catch (err) {
     console.log("❌ Contact Error:", err.message);
 
     res.status(500).json({
       success: false,
-      message: "Server Error ❌"
+      message: "Server Error ❌",
     });
   }
 });
@@ -245,18 +265,17 @@ app.get("/test-email", async (req, res) => {
       from: process.env.SMTP_USER,
       to: process.env.ADMIN_EMAIL,
       subject: "✅ AVX Test Email",
-      text: "Brevo SMTP working successfully 🚀"
+      text: "Brevo SMTP working successfully 🚀",
     });
 
     res.send("✅ Email Sent Successfully!");
   } catch (err) {
-    console.log("❌ Email Error:", err.message);
     res.send("❌ Email Failed: " + err.message);
   }
 });
 
 // ===============================
-// SERVER START
+// SERVER START (ONLY ONCE)
 // ===============================
 app.listen(PORT, () => {
   console.log(`🚀 AVX Backend Live → Port ${PORT}`);
