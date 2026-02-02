@@ -1,11 +1,10 @@
 // ===============================
-// AVX FINAL SERVER.JS (RENDER READY + BREVO SMTP)
+// AVX SERVER.JS (NO EMAIL VERSION)
 // ===============================
 
 // ===== IMPORTS =====
 const express = require("express");
 const mongoose = require("mongoose");
-const nodemailer = require("nodemailer");
 const Razorpay = require("razorpay");
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
@@ -14,30 +13,15 @@ const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 require("dotenv").config();
 
-// ===== MODELS =====
+// Models
 const Lead = require("./models/Lead");
 const DemoRequest = require("./models/DemoRequest");
-
-// ===== EMAIL TEMPLATES =====
-const {
-  orderClientTemplate,
-  adminOrderTemplate,
-  demoTemplate,
-} = require("./utils/emailTemplates");
 
 // ===============================
 // APP INIT
 // ===============================
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-/* ✅ ADD THIS ROOT ROUTE HERE */
-app.get("/", (req, res) => {
-  res.send("✅ AVX Backend Running Successfully 🚀");
-});
-
-
-
 
 // ===============================
 // ✅ CORS FIX (Netlify → Render)
@@ -46,7 +30,7 @@ app.use(
   cors({
     origin: "https://avxweb.netlify.app",
     methods: ["GET", "POST"],
-    credentials: false,
+    credentials: true,
   })
 );
 
@@ -69,6 +53,7 @@ app.use(
       secure: false,
       httpOnly: true,
       sameSite: "lax",
+      maxAge: 1000 * 60 * 60,
     },
   })
 );
@@ -118,36 +103,6 @@ const Admin = mongoose.model(
     password: String,
   })
 );
-
-// ===============================
-// ✅ EMAIL SETUP (BREVO SMTP)
-// ===============================
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
-
-const SibApiV3Sdk = require("@getbrevo/brevo");
-
-let apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-apiInstance.setApiKey(
-  SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY
-);
-
-async function sendEmail(to, subject, html) {
-  await apiInstance.sendTransacEmail({
-    sender: { email: process.env.ADMIN_EMAIL, name: "AVX" },
-    to: [{ email: to }],
-    subject,
-    htmlContent: html,
-  });
-}
 
 // ===============================
 // ADMIN AUTH MIDDLEWARE
@@ -205,28 +160,17 @@ app.get("/admin/leads", isAdmin, async (req, res) => {
 });
 
 // ===============================
-// DEMO REQUEST SAVE
-// ===============================
-app.post("/demo-request", async (req, res) => {
-  await DemoRequest.create(req.body);
-
-  res.json({
-    success: true,
-    message: "Demo Request Saved ✅",
-  });
-});
-
-// ===============================
-// CONTACT FORM + EMAIL CONFIRM
+// CONTACT FORM (ONLY SAVE TO DB)
 // ===============================
 app.post("/contact", async (req, res) => {
   try {
     console.log("✅ CONTACT FORM HIT:", req.body);
 
     const { name, email, phone, message, plan, amount } = req.body;
+
     const orderId = "AVX" + Date.now();
 
-    // Save Order
+    // ✅ Save Order
     await Order.create({
       orderId,
       plan,
@@ -237,7 +181,7 @@ app.post("/contact", async (req, res) => {
       amount,
     });
 
-    // Save Lead
+    // ✅ Save Lead
     await Lead.create({
       name,
       email,
@@ -246,29 +190,9 @@ app.post("/contact", async (req, res) => {
       message,
     });
 
-    // ===============================
-    // ✅ ADMIN EMAIL
-    // ===============================
-    await transporter.sendMail({
-      from: `"AVX Website" <${process.env.SMTP_USER}>`,
-      to: process.env.ADMIN_EMAIL,
-      subject: `📩 New Order Received - ${orderId}`,
-      html: adminOrderTemplate(name, email, phone, plan, amount, orderId),
-    });
-
-    // ===============================
-    // ✅ CLIENT EMAIL
-    // ===============================
-    await transporter.sendMail({
-      from: `"AVX Web Services" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: `✅ Order Confirmed - ${orderId}`,
-      html: orderClientTemplate(name, plan, amount, orderId),
-    });
-
     res.json({
       success: true,
-      message: "Order Saved + Emails Sent Successfully ✅",
+      message: "✅ Order Saved Successfully (No Email)",
       orderId,
     });
   } catch (err) {
@@ -281,52 +205,27 @@ app.post("/contact", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("✅ AVX Backend Running Successfully 🚀");
-});
-
-
 // ===============================
-// TEST EMAIL ROUTE
+// LIVE POPUP API
 // ===============================
-app.get("/test-email", async (req, res) => {
+app.get("/live-popup", async (req, res) => {
   try {
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: process.env.ADMIN_EMAIL,
-      subject: "✅ AVX Test Email",
-      text: "Brevo SMTP working successfully 🚀",
-    });
+    const orders = await Order.find().sort({ createdAt: -1 }).limit(3);
 
-    res.send("✅ Email Sent Successfully!");
-  } catch (err) {
-    res.send("❌ Email Failed: " + err.message);
+    let popupData = [];
+    orders.forEach((o) =>
+      popupData.push(`✅ ${o.name} ordered ${o.plan}`)
+    );
+
+    res.json(popupData);
+  } catch {
+    res.json([]);
   }
 });
 
-app.get("/live-popup", async (req, res) => {
-  res.json([
-    "✅ Someone ordered SEO Plan",
-    "📩 New inquiry received",
-    "🎁 Free demo requested"
-  ]);
-});
-
-app.get("/contact", (req, res) => {
-  res.send("✅ Contact API working! Use POST method.");
-});
-
-app.get("/", (req, res) => {
-  res.send("🚀 AVX Backend Running Successfully!");
-});
-
-
 // ===============================
-// SERVER START (ONLY ONCE)
+// SERVER START
 // ===============================
 app.listen(PORT, () => {
   console.log(`🚀 AVX Backend Live → Port ${PORT}`);
 });
-
-
-
